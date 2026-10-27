@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Рингтон Студия</title>
+  <meta name="description" content="Музыка, обрезка треков и создание рингтонов прямо в браузере. Работает офлайн, без интернета.">
+  <meta name="theme-color" content="#0f1115">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Рингтоны">
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">♪</div>
+        <div class="brand-name">Рингтон Студия</div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-install" class="btn btn-small hidden">Установить</button>
+        <button id="btn-help" class="icon-btn" title="Как поставить рингтон" aria-label="Помощь">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm.9 15.5h-1.8v-1.8h1.8v1.8zm1.9-6.6-.8.8c-.6.6-1 1.1-1 2.1h-1.8v-.4c0-.8.3-1.5.9-2.1l1.1-1.1c.3-.3.5-.7.5-1.2 0-1-.8-1.7-1.8-1.7s-1.8.8-1.8 1.8H8.5c0-2 1.6-3.5 3.6-3.5s3.4 1.4 3.4 3.3c0 .8-.3 1.4-.7 2z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="main">
+      <section id="view-music" class="view" aria-label="Музыка"></section>
+      <section id="view-editor" class="view hidden" aria-label="Редактор"></section>
+      <section id="view-ringtones" class="view hidden" aria-label="Мои рингтоны"></section>
+    </main>
+
+    <div id="playbar" class="playbar hidden"></div>
+
+    <nav id="tabbar" class="tabbar" aria-label="Разделы">
+      <button class="tab active" data-tab="music" type="button">
+        <span class="tab-icon" aria-hidden="true">🎵</span>
+        <span class="tab-label">Музыка</span>
+      </button>
+      <button class="tab" data-tab="editor" type="button">
+        <span class="tab-icon" aria-hidden="true">✂️</span>
+        <span class="tab-label">Обрезка</span>
+      </button>
+      <button class="tab" data-tab="ringtones" type="button">
+        <span class="tab-icon" aria-hidden="true">🔔</span>
+        <span class="tab-label">Рингтоны</span>
+      </button>
+    </nav>
+
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <div id="modal-root"></div>
+  </div>
+
+  <noscript>
+    <div style="padding:24px;font-family:sans-serif;color:#eee;background:#0f1115">
+      Для работы приложения включите JavaScript.
+    </div>
+  </noscript>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

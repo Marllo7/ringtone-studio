@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+*.local
+.vscode/
+.idea/
+
+# Local docs - не пушить на GitHub
+PROJECT_CONTEXT.md
+Run.txt
+
+# Agent/system instructions - local only, not for GitHub
+AGENTS.md
