@@ -61,7 +61,13 @@ function buildMarkup() {
     <section id="panel-all"></section>
     <section id="panel-folders" class="hidden"></section>
     <section id="panel-playlists" class="hidden"></section>
-    <input type="file" id="in-files" class="hidden" multiple accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac">
+    <!--
+      Не задаём accept намеренно: на части Android-прошивок даже audio/* или
+      список расширений запускает «Галерею» и скрывает аудио с SD-карты.
+      Системное приложение «Файлы» покажет всё, а музыку мы отфильтруем сами
+      в registerFile().
+    -->
+    <input type="file" id="in-files" class="hidden" multiple>
     <input type="file" id="in-folder" class="hidden" webkitdirectory directory>
     <input type="file" id="in-m3u" class="hidden" accept=".m3u,.m3u8,text/plain">
   `;
@@ -109,7 +115,7 @@ function renderSources() {
   const fileBtn = h(`<button class="source-btn" type="button">
       <span class="s-ico mp-ico" aria-hidden="true">${icon('music', 28)}</span>
       <span class="s-name">Выбрать файлы</span>
-      <span class="s-sub">по одному или несколько</span>
+      <span class="s-sub">MP3, M4A, WAV — из приложения «Файлы»</span>
     </button>`);
   fileBtn.addEventListener('click', () => els.inFiles.click());
   els.sources.append(dirBtn, fileBtn);
@@ -145,6 +151,10 @@ function registerFile(file, path) {
 }
 
 function addFiles(fileList) {
+  if (!fileList || !fileList.length) {
+    toast('Файлы не выбраны. Откройте приложение «Файлы», а не «Галерею».', { timeout: 3500 });
+    return;
+  }
   const added = [];
   for (const f of fileList) {
     const rel = f.webkitRelativePath || '';
@@ -161,7 +171,7 @@ function afterAdd(added, attempted) {
     renderEverything(true);
     toast(`Добавлено треков: ${added.length}`, { timeout: 2500 });
   } else if (attempted) {
-    toast('Новых аудиофайлов не найдено', { timeout: 2200 });
+    toast('Аудиофайлы не найдены. Выберите MP3, M4A или WAV в приложении «Файлы».', { timeout: 4000 });
   }
 }
 
