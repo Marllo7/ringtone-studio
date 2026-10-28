@@ -66,7 +66,9 @@ export function menuSheet(items, opts = {}) {
   items.forEach(it => {
     const row = h(`<button class="menu-item ${it.danger ? 'danger' : ''}" type="button">
       <span class="mi-ico" aria-hidden="true"></span><span class="grow"></span></button>`);
-    row.querySelector('.mi-ico').textContent = it.icon || '';
+    const ico = row.querySelector('.mi-ico');
+    if (typeof it.icon === 'string' && it.icon.startsWith('<svg')) ico.innerHTML = it.icon;
+    else ico.textContent = it.icon || '';
     row.querySelector('.grow').textContent = it.label;
     row.addEventListener('click', () => { m.close(); it.onClick?.(); });
     box.appendChild(row);
@@ -101,7 +103,7 @@ export function promptDialog({ title = '', label = '', value = '', placeholder =
     const el = h(`<div>
       <div class="sheet-title"><span class="grow"></span></div>
       <div class="field"><label></label><input type="text" spellcheck="false"></div>
-      <div class="sheet-actions" style="flex-direction:row">
+      <div class="sheet-actions" style="flex-direction:row;margin-top:14px">
         <button class="btn ghost" data-act="no" style="flex:1">Отмена</button>
         <button class="btn primary" data-act="yes" style="flex:1">${ok}</button>
       </div>

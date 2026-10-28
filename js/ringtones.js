@@ -1,6 +1,7 @@
 // ringtones.js — вкладка «Рингтоны»: сохранённые файлы, проигрывание, установка
 
 import { h, confirmDialog, promptDialog, toast, vibrate } from './ui.js';
+import { icon } from './icons.js';
 import { listRingtones, deleteRingtone, updateRingtone, downloadBlob, shareFile } from './export.js';
 import { fmtTime, fmtBytes, fmtDate } from './engine.js';
 
@@ -9,12 +10,10 @@ let items = [];
 let audio = null;       // отдельный плеер для рингтонов
 let playingId = null;
 let playingUrl = null;
-let cbShowHelp = null;
 let cbGoToEditor = null;
 let searchQ = '';
 
-export function initRingtones({ showHelp, goToEditor }) {
-  cbShowHelp = showHelp;
+export function initRingtones({ goToEditor }) {
   cbGoToEditor = goToEditor;
   view = document.getElementById('view-ringtones');
   audio = new Audio();
@@ -36,12 +35,8 @@ async function render() {
   view.appendChild(h(`<div class="section-title">Мои рингтоны</div>`));
 
   if (items.length) {
-    const head = h(`<div class="card-row">
-        <div class="grow" style="font-size:14.5px"></div>
-        <button class="btn small ghost">❓ Как поставить на звонок</button>
-      </div>`);
-    head.querySelector('.grow').textContent = `${items.length} шт. • ${fmtBytes(totalSize)} в приложении`;
-    head.querySelector('button').addEventListener('click', () => cbShowHelp?.());
+    const head = h(`<div class="count-line"></div>`);
+    head.textContent = `${items.length} шт. • ${fmtBytes(totalSize)} в приложении`;
     view.appendChild(head);
 
     const search = h(`<div class="search-wrap"><input type="search" placeholder="Поиск рингтона…" aria-label="Поиск"></div>`);
@@ -55,11 +50,11 @@ async function render() {
     view.appendChild(search);
   } else {
     const empty = h(`<div class="empty-state">
-        <span class="e-ico">🔔</span>
+        <span class="e-ico">${icon('bell', 56)}</span>
         <div class="e-title">Здесь появятся ваши рингтоны</div>
-        <p>Обрежьте любимую песню во вкладке «Обрезка» — и она ляжет сюда.
-        Отсюда её можно скачать в телефон и поставить на звонок.</p>
-        <button class="btn primary" data-act="make">✂️ Сделать рингтон</button>
+        <p>Обрежьте любимую песню во вкладке «Обрезка» — и она появится здесь.
+        Отсюда её можно скачать или поделиться.</p>
+        <button class="btn primary" data-act="make">${icon('cut', 18)} Сделать рингтон</button>
       </div>`);
     empty.querySelector('[data-act=make]').addEventListener('click', () => cbGoToEditor?.());
     view.appendChild(empty);
@@ -71,7 +66,7 @@ async function render() {
   const visible = q ? items.filter(r => (r.title || '').toLowerCase().includes(q)) : items;
 
   if (!visible.length) {
-    list.appendChild(h(`<div class="empty-state"><span class="e-ico">🔍</span><div class="e-title">Ничего не найдено</div></div>`));
+    list.appendChild(h(`<div class="empty-state"><span class="e-ico">${icon('search', 56)}</span><div class="e-title">Ничего не найдено</div></div>`));
   }
 
   visible.forEach(rec => list.appendChild(buildRow(rec)));
@@ -82,19 +77,17 @@ function buildRow(rec) {
   const isPlaying = playingId === rec.id && !audio.paused;
   const row = h(`<div class="ring-row">
       <button class="ring-play ${isPlaying ? 'playing' : ''}" aria-label="Прослушать">
-        ${isPlaying
-          ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'
-          : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'}
+        ${isPlaying ? icon('pause') : icon('play')}
       </button>
       <div class="t-main">
         <div class="t-title"></div>
         <div class="t-sub"></div>
       </div>
       <div class="ring-actions">
-        <button class="icon-btn" data-act="dl" title="Скачать" aria-label="Скачать">⬇️</button>
-        <button class="icon-btn" data-act="share" title="Поделиться" aria-label="Поделиться">↗️</button>
-        <button class="icon-btn" data-act="rename" title="Переименовать" aria-label="Переименовать">✏️</button>
-        <button class="icon-btn" data-act="del" title="Удалить" aria-label="Удалить">🗑️</button>
+        <button class="icon-btn" data-act="dl" title="Скачать" aria-label="Скачать">${icon('download')}</button>
+        <button class="icon-btn" data-act="share" title="Поделиться" aria-label="Поделиться">${icon('share')}</button>
+        <button class="icon-btn" data-act="rename" title="Переименовать" aria-label="Переименовать">${icon('edit')}</button>
+        <button class="icon-btn" data-act="del" title="Удалить" aria-label="Удалить">${icon('remove')}</button>
       </div>
     </div>`);
   row.querySelector('.t-title').textContent = rec.title || 'Рингтон';
@@ -108,7 +101,7 @@ function buildRow(rec) {
   row.querySelector('.ring-play').addEventListener('click', () => togglePlay(rec));
   row.querySelector('[data-act=dl]').addEventListener('click', () => {
     downloadBlob(rec.mp3, `${rec.title || 'ringtone'}.mp3`);
-    toast('Файл — в «Загрузках» телефона', { actionLabel: 'Как поставить?', onAction: () => cbShowHelp?.() });
+    toast('Файл — в «Загрузках» телефона');
   });
   row.querySelector('[data-act=share]').addEventListener('click', async () => {
     await shareFile(rec.mp3, `${rec.title || 'ringtone'}.mp3`, rec.title);

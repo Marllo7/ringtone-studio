@@ -1,11 +1,12 @@
 // player.js — музыкальный плеер: панель снизу, очередь, MediaSession (локскрин)
 
 import { h, toast, vibrate } from './ui.js';
+import { icon } from './icons.js';
 import { readTags } from './id3.js';
 
 const ICONS = {
-  play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
-  pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  play: icon('play'),
+  pause: icon('pause'),
   prev: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>',
   next: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>',
 };
@@ -34,17 +35,17 @@ export function initPlayer({ resolve: res, onEditTrack: onEdit }) {
   const bar = document.getElementById('playbar');
   bar.innerHTML = `
     <div class="pb-row">
-      <div class="pb-art" aria-hidden="true">🎵</div>
+      <div class="pb-art" aria-hidden="true">${icon('music')}</div>
       <div class="pb-meta">
         <div class="pb-title">—</div>
         <div class="pb-artist"></div>
       </div>
-      <button class="pb-btn small-btn" data-act="shuffle" aria-label="Перемешать" title="Перемешать">🔀</button>
-      <button class="pb-btn small-btn" data-act="repeat" aria-label="Повтор" title="Повтор">🔁</button>
+      <button class="pb-btn small-btn" data-act="shuffle" aria-label="Перемешать" title="Перемешать">${icon('shuffle')}</button>
+      <button class="pb-btn small-btn" data-act="repeat" aria-label="Повтор" title="Повтор">${icon('repeat')}</button>
       <button class="pb-btn" data-act="prev" aria-label="Предыдущий">${ICONS.prev}</button>
       <button class="pb-btn play" data-act="toggle" aria-label="Играть/пауза">${ICONS.play}</button>
       <button class="pb-btn" data-act="next" aria-label="Следующий">${ICONS.next}</button>
-      <button class="pb-btn small-btn" data-act="edit" aria-label="Обрезать трек" title="Сделать рингтон">✂️</button>
+      <button class="pb-btn small-btn" data-act="edit" aria-label="Обрезать трек" title="Сделать рингтон">${icon('cut')}</button>
     </div>
     <div class="pb-progress">
       <span class="pb-time" data-el="cur">0:00</span>
@@ -80,7 +81,7 @@ export function initPlayer({ resolve: res, onEditTrack: onEdit }) {
   });
   els.btnRepeat.addEventListener('click', () => {
     repeat = repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off';
-    els.btnRepeat.textContent = repeat === 'one' ? '🔂' : '🔁';
+    els.btnRepeat.innerHTML = repeat === 'one' ? icon('repeatOne') : icon('repeat');
     els.btnRepeat.classList.toggle('on', repeat !== 'off');
     toast(repeat === 'off' ? 'Повтор выключен' : repeat === 'all' ? 'Повтор всей очереди' : 'Повтор одного трека', { timeout: 1600 });
   });
@@ -161,7 +162,7 @@ function load(autoplay) {
 
 function setArt(url) {
   if (url) els.art.innerHTML = `<img src="${url}" alt="">`;
-  else els.art.textContent = '🎵';
+  else els.art.innerHTML = icon('music');
 }
 
 async function loadCoverAsync(track) {
@@ -235,7 +236,7 @@ function updateMediaSession(track, artUrl) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title || track.name,
       artist: track.artist || '',
-      album: 'Рингтон Студия',
+      album: 'Ringtone Studio',
       artwork: artUrl ? [{ src: artUrl, sizes: '512x512' }] : [],
     });
   } catch { /* нет MediaMetadata */ }

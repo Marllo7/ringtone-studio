@@ -1,6 +1,7 @@
 // app.js — сборка приложения: вкладки, помощь, установка, service worker
 
 import { h, modal, toast } from './ui.js';
+import { icon } from './icons.js';
 import { unlockAudio } from './engine.js';
 import { initLibrary, getTrack, openTrackPicker } from './library.js';
 import { initPlayer, playQueue, togglePlay } from './player.js';
@@ -21,27 +22,22 @@ function setTab(name) {
   document.getElementById('main').scrollTop = 0;
 }
 
-/* ===== Помощь: как поставить рингтон ===== */
+/* ===== Помощь: рингтон на iPhone (для Android это очевидно — не пишем) ===== */
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 function showHelpModal() {
   const el = h(`<div>
-    <div class="sheet-title"><span class="grow">Как поставить рингтон на звонок</span></div>
-
-    <span class="os-tag">Android</span>
-    <div class="help-steps">
-      <div class="help-step"><span class="hs-n">1</span><span>В разделе <b>«Рингтоны»</b> нажмите <b>⬇️ Скачать</b> у нужного файла. Он появится в папке <b>«Загрузки»</b> телефона.</span></div>
-      <div class="help-step"><span class="hs-n">2</span><span>Откройте <b>Настройки телефона → Звук и вибрация → Рингтон</b> (на Samsung: «Звук и вибрация → Мелодия звонка»).</span></div>
-      <div class="help-step"><span class="hs-n">3</span><span>Нажмите <b>«+» / «Выбрать из файлов» / «Добавить рингтон»</b> и укажите скачанный файл.</span></div>
-    </div>
-    <div class="help-note">Быстрый способ: откройте «Файлы» (Диспетчер файлов) → Загрузки → зажмите файл → <b>«Установить как рингтон»</b>. Файл можно и перенести на SD-карту — телефон увидит его оттуда.</div>
+    <div class="sheet-title"><span class="grow">Как сделать рингтон на iPhone</span></div>
 
     <span class="os-tag">iPhone</span>
     <div class="help-steps">
-      <div class="help-step"><span class="hs-n">1</span><span>Нажмите <b>↗ Поделиться</b> у рингтона и выберите <b>«Сохранить в Файлы»</b>.</span></div>
-      <div class="help-step"><span class="hs-n">2</span><span>Откройте бесплатное приложение <b>GarageBand</b>, создайте проект, зажмите файл из «Файлов» и перетащите на дорожку.</span></div>
-      <div class="help-step"><span class="hs-n">3</span><span>Нажмите внизу <b>«Отправить» → «Рингтон»</b>.</span></div>
+      <div class="help-step"><span class="hs-n">1</span><span>Нажмите <b>«Поделиться»</b> у рингтона и выберите <b>«Сохранить в Файлы»</b>.</span></div>
+      <div class="help-step"><span class="hs-n">2</span><span>Откройте бесплатное приложение <b>GarageBand</b>, создайте проект и перетащите файл из «Файлов» на дорожку.</span></div>
+      <div class="help-step"><span class="hs-n">3</span><span>Нажмите <b>«Отправить» → «Рингтон»</b>.</span></div>
     </div>
-    <div class="help-note">Браузер на iPhone не может ставить рингтоны напрямую — это ограничение iOS, GarageBand — официальный способ.</div>
+    <div class="help-note">Браузер на iPhone не может назначать рингтоны сам — это ограничение iOS. GarageBand — официальный способ Apple.</div>
 
     <button class="btn primary block" data-act="ok">Понятно</button>
   </div>`);
@@ -55,9 +51,8 @@ function showOnboarding() {
   const el = h(`<div>
     <div class="sheet-title"><span class="grow">👋 Добро пожаловать!</span></div>
     <div class="help-step"><span class="hs-n">1</span><span><b>«Музыка»</b> — откройте папку с песнями (видна и SD-карта) или выберите файлы. Вся музыка появится в приложении.</span></div>
-    <div class="help-step"><span class="hs-n">2</span><span><b>«Обрезка»</b> — нажмите ✂️ у песни, выделите кусок на волне или сразу жмите 🎯 «Громкое место».</span></div>
-    <div class="help-step"><span class="hs-n">3</span><span><b>«Создать рингтон»</b> — файл скачается в телефон. Как поставить на звонок — кнопка <b>«?»</b> сверху.</span></div>
-    <div class="help-note">💡 Совет: добавьте приложение на главный экран (меню браузера → «Добавить на главный экран») — оно работает даже без интернета.</div>
+    <div class="help-step"><span class="hs-n">2</span><span><b>«Обрезка»</b> — выберите песню, выделите на волне лучший кусок или нажмите «Громкое место».</span></div>
+    <div class="help-step"><span class="hs-n">3</span><span><b>«Создать рингтон»</b> — отрезок сохранится в приложение и в «Загрузки» телефона.</span></div>
     <button class="btn primary block" data-act="ok">Начать</button>
   </div>`);
   el.querySelector('[data-act=ok]').addEventListener('click', () => {
@@ -70,6 +65,11 @@ function showOnboarding() {
 /* ===== Инициализация ===== */
 
 function init() {
+  // SVG-иконки из data-icon
+  document.querySelectorAll('[data-icon]').forEach(el => {
+    el.innerHTML = icon(el.dataset.icon);
+  });
+
   document.querySelectorAll('.tab').forEach(t =>
     t.addEventListener('click', () => setTab(t.dataset.tab)));
 
@@ -85,20 +85,21 @@ function init() {
 
   initEditor({
     pickTrack: () => openTrackPicker({
-      title: 'Выберите песню для рингтона',
+      title: 'Выберите песню для обрезки',
       onPick: (t) => openEditorTrack(t),
     }),
-    showHelp: showHelpModal,
   });
 
   initRingtones({
-    showHelp: showHelpModal,
     goToEditor: () => { setTab('editor'); if (!hasTrack()) editorPick(); },
   });
 
   document.addEventListener('rs:goto', (e) => setTab(e.detail));
 
-  document.getElementById('btn-help').addEventListener('click', showHelpModal);
+  // подсказка «?» — только на iPhone (для Android всё очевидно)
+  const btnHelp = document.getElementById('btn-help');
+  if (isIOS) btnHelp.classList.remove('hidden');
+  btnHelp.addEventListener('click', showHelpModal);
 
   // разблокировка звука по первому касанию (iOS)
   const unlock = () => { unlockAudio(); document.removeEventListener('pointerdown', unlock); };

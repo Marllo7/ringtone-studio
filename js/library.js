@@ -1,6 +1,7 @@
 // library.js — музыкальная библиотека: папки, файлы, плейлисты, поиск, теги
 
 import { h, modal, menuSheet, confirmDialog, promptDialog, toast } from './ui.js';
+import { icon } from './icons.js';
 import { dbGetAll, dbGet, dbPut, dbDelete, newId } from './db.js';
 import { isAudioName, fidOf, trackInfoFromName, fmtTime, fmtBytes, extOf } from './engine.js';
 import { readTags, parseM3U } from './id3.js';
@@ -100,13 +101,13 @@ const supportsDirAttr = () => {
 function renderSources() {
   els.sources.innerHTML = '';
   const dirBtn = h(`<button class="source-btn" type="button">
-      <span class="s-ico" aria-hidden="true">📂</span>
+      <span class="s-ico" aria-hidden="true">${icon('folderOpen', 28)}</span>
       <span class="s-name">${hasDirPicker() || supportsDirAttr() ? 'Открыть папку' : 'Выбрать файлы'}</span>
       <span class="s-sub">с музыкой — сразу все песни</span>
     </button>`);
   dirBtn.addEventListener('click', openDirPicker);
   const fileBtn = h(`<button class="source-btn" type="button">
-      <span class="s-ico" aria-hidden="true">🎵</span>
+      <span class="s-ico mp-ico" aria-hidden="true">${icon('music', 28)}</span>
       <span class="s-name">Выбрать файлы</span>
       <span class="s-sub">по одному или несколько</span>
     </button>`);
@@ -114,7 +115,7 @@ function renderSources() {
   els.sources.append(dirBtn, fileBtn);
   if (state.savedDirName && hasDirPicker()) {
     const r = h(`<div class="resume-line" style="grid-column:1/-1">
-        <span aria-hidden="true">🕘</span>
+        <span aria-hidden="true">${icon('history', 18)}</span>
         <span class="grow">Недавняя папка: «${escapeHtml(state.savedDirName)}»</span>
         <button class="btn small primary" type="button">Открыть</button>
       </div>`);
@@ -364,19 +365,19 @@ function renderAll() {
   updateEnrichStatus();
 
   if (!state.tracks.size) {
-    els.panelAll.appendChild(emptyState('🎶', 'Библиотека пуста',
+    els.panelAll.appendChild(emptyState('library', 'Библиотека пуста',
       'Нажмите «Открыть папку» и выберите папку с музыкой на телефоне или карте памяти. Все треки появятся здесь.'));
     return;
   }
   if (!visible.length) {
-    els.panelAll.appendChild(emptyState('🔍', 'Ничего не найдено', 'Попробуйте изменить запрос.'));
+    els.panelAll.appendChild(emptyState('search', 'Ничего не найдено', 'Попробуйте изменить запрос.'));
     return;
   }
   renderBatchedList(els.panelAll, visible, state.currentAllFids);
 }
 
-function emptyState(ico, title, text) {
-  return h(`<div class="empty-state"><span class="e-ico">${ico}</span>
+function emptyState(icoName, title, text) {
+  return h(`<div class="empty-state"><span class="e-ico">${icon(icoName, 56)}</span>
     <div class="e-title">${escapeHtml(title)}</div><p>${text}</p></div>`);
 }
 
@@ -414,7 +415,7 @@ function renderBatchedList(container, items, contextFids) {
 
 function buildTrackRow(track, index, contextGetter) {
   const row = h(`<div class="track-row" data-fid="${escapeHtml(track.fid)}">
-      <div class="t-art" aria-hidden="true">🎵</div>
+      <div class="t-art" aria-hidden="true">${icon('music')}</div>
       <div class="t-main"><div class="t-title"></div><div class="t-sub"></div></div>
       <div class="t-dur">—</div>
       <button class="t-menu" aria-label="Меню">⋮</button>
@@ -463,10 +464,10 @@ function markPlaying(fid) {
 
 function openTrackMenu(track, contextGetter, index) {
   menuSheet([
-    { icon: '▶', label: 'Воспроизвести', onClick: () => cbPlayQueue(contextGetter ? contextGetter() : [track.fid], Math.max(0, index)) },
-    { icon: '✂️', label: 'Сделать рингтон', onClick: () => cbEditTrack(track) },
-    { icon: '➕', label: 'Добавить в плейлист…', onClick: () => addToPlaylistDialog(track) },
-    { icon: 'ℹ️', label: 'Свойства', onClick: () => showTrackInfo(track) },
+    { icon: icon('play'), label: 'Воспроизвести', onClick: () => cbPlayQueue(contextGetter ? contextGetter() : [track.fid], Math.max(0, index)) },
+    { icon: icon('cut'), label: 'Сделать рингтон', onClick: () => cbEditTrack(track) },
+    { icon: icon('add'), label: 'Добавить в плейлист…', onClick: () => addToPlaylistDialog(track) },
+    { icon: icon('info'), label: 'Свойства', onClick: () => showTrackInfo(track) },
   ], { title: track.title || track.name });
 }
 
@@ -487,7 +488,7 @@ function showTrackInfo(track) {
         <span style="color:var(--muted);white-space:nowrap">${r[0]}</span>
         <span style="text-align:right;word-break:break-all;font-weight:600">${escapeHtml(r[1])}</span>
       </div>`).join('')}
-      <button class="btn primary block" data-act="ring">✂️ Сделать рингтон</button>
+      <button class="btn primary block" data-act="ring">${icon('cut', 18)} Сделать рингтон</button>
     </div>`);
   el.querySelector('[data-act=ring]').addEventListener('click', () => { el.__m?.close(); cbEditTrack(track); });
   el.__m = modal(el);
@@ -522,8 +523,8 @@ function renderFolders() {
   const p = els.panelFolders;
   p.innerHTML = '';
   if (!state.tracks.size) {
-    p.appendChild(emptyState('📂', 'Папок пока нет',
-      'Откройте папку с музыкой — здесь появится её структура: удобно искать не среди 500 песен, а по папкам и альбомам.'));
+    p.appendChild(emptyState('folder', 'Папок пока нет',
+      'Откройте папку с музыкой — здесь появятся её папки и альбомы.'));
     return;
   }
   const { root, loose } = buildTree();
@@ -535,7 +536,7 @@ function renderFolders() {
   // Хлебные крошки
   if (state.dir.length) {
     const cr = h(`<div class="breadcrumb"></div>`);
-    const rootBtn = h(`<button type="button">📂 Начало</button>`);
+    const rootBtn = h(`<button type="button">${icon('folder', 16)} Начало</button>`);
     rootBtn.addEventListener('click', () => { state.dir = []; renderFolders(); });
     cr.append(rootBtn);
     state.dir.forEach((seg, i) => {
@@ -562,7 +563,7 @@ function renderFolders() {
   for (const d of dirs) {
     const total = countAll(d);
     const row = h(`<div class="folder-row">
-        <span class="f-ico" aria-hidden="true">📁</span>
+        <span class="f-ico" aria-hidden="true">${icon('folder')}</span>
         <span class="f-name">${escapeHtml(d.name)}</span>
         <span class="f-count">${total}</span>
       </div>`);
@@ -573,7 +574,7 @@ function renderFolders() {
   // Файлы без папки (на верхнем уровне)
   if (!state.dir.length && loose.length) {
     const row = h(`<div class="folder-row">
-        <span class="f-ico" aria-hidden="true">🎵</span>
+        <span class="f-ico" aria-hidden="true">${icon('music')}</span>
         <span class="f-name">Выбранные отдельно файлы</span>
         <span class="f-count">${loose.length}</span>
       </div>`);
@@ -587,7 +588,7 @@ function renderFolders() {
 
   if (fidsHere.length) {
     const head = h(`<div class="folder-row" style="background:var(--surface-2)">
-        <span class="f-ico" aria-hidden="true">🎧</span>
+        <span class="f-ico" aria-hidden="true">${icon('headset')}</span>
         <span class="f-name">Треков в папке: ${fidsHere.length}</span>
         <button class="play-mini" aria-label="Слушать папку">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -603,7 +604,7 @@ function renderFolders() {
       if (t) list.appendChild(buildTrackRow(t, i, () => fidsHere.slice()));
     });
   } else if (state.dir.length && !dirs.length) {
-    list.appendChild(emptyState('🎵', 'Здесь только подпапки', 'Откройте подпапку, чтобы увидеть треки.'));
+    list.appendChild(emptyState('music', 'Здесь только подпапки', 'Откройте подпапку, чтобы увидеть треки.'));
   }
 
   p.appendChild(list);
@@ -632,16 +633,16 @@ function renderPlaylists() {
 
   // Кнопки
   const actions = h(`<div class="pl-actions">
-      <button class="btn" type="button">＋ Новый плейлист</button>
-      <button class="btn ghost" type="button">📥 Импорт M3U</button>
+      <button class="btn" type="button">${icon('add', 18)} Новый плейлист</button>
+      <button class="btn ghost" type="button">${icon('upload', 18)} Импорт M3U</button>
     </div>`);
   actions.children[0].addEventListener('click', createPlaylistDialog);
   actions.children[1].addEventListener('click', () => els.inM3u.click());
   p.appendChild(actions);
 
   if (!state.playlists.length) {
-    p.appendChild(emptyState('📻', 'Плейлисты',
-      'Создайте свой плейлист — например «Для рингтонов» — и выбирайте музыку из него, а не из общей кучи. Плейлисты хранятся в приложении.'));
+    p.appendChild(emptyState('queue', 'Плейлисты',
+      'Создайте свой плейлист — например «Любимые песни» — и собирайте в него музыку. Плейлисты хранятся в приложении.'));
     return;
   }
 
@@ -649,7 +650,7 @@ function renderPlaylists() {
   for (const pl of state.playlists) {
     const known = pl.fids.filter(f => state.tracks.has(f)).length;
     const row = h(`<div class="playlist-row">
-        <span class="f-ico" aria-hidden="true">📻</span>
+        <span class="f-ico" aria-hidden="true">${icon('queue')}</span>
         <span class="f-name">${escapeHtml(pl.name)}</span>
         <span class="f-count">${known}${known !== pl.fids.length ? ` (+${pl.fids.length - known} скрыто)` : ''}</span>
         ${known ? `<button class="play-mini" aria-label="Слушать">
@@ -675,17 +676,17 @@ function renderPlaylists() {
 
 function playlistMenu(pl) {
   menuSheet([
-    { icon: '▶', label: 'Слушать', onClick: () => {
+    { icon: icon('play'), label: 'Слушать', onClick: () => {
         const fids = pl.fids.filter(f => state.tracks.has(f));
         if (fids.length) cbPlayQueue(fids, 0);
         else toast('Сначала откройте папку с музыкой');
       } },
-    { icon: '✏️', label: 'Переименовать', onClick: async () => {
+    { icon: icon('edit'), label: 'Переименовать', onClick: async () => {
         const name = await promptDialog({ title: 'Плейлист', label: 'Название', value: pl.name });
         if (name) { pl.name = name; pl.updatedAt = Date.now(); await dbPut('playlists', pl); await savePlaylistsOrder(); renderPlaylists(); }
       } },
-    { icon: '📤', label: 'Экспорт в M3U', onClick: () => exportM3U(pl) },
-    { icon: '🗑', label: 'Удалить плейлист', danger: true, onClick: async () => {
+    { icon: icon('download'), label: 'Экспорт в M3U', onClick: () => exportM3U(pl) },
+    { icon: icon('remove'), label: 'Удалить плейлист', danger: true, onClick: async () => {
         if (await confirmDialog({ title: `Удалить «${pl.name}»?`, message: 'Плейлист удалится, файлы музыки останутся.', ok: 'Удалить', danger: true })) {
           await dbDelete('playlists', pl.id);
           state.playlists = state.playlists.filter(x => x.id !== pl.id);
@@ -696,7 +697,7 @@ function playlistMenu(pl) {
 }
 
 async function createPlaylistDialog() {
-  const name = await promptDialog({ title: 'Новый плейлист', label: 'Название плейлиста', placeholder: 'Например: Для рингтонов' });
+  const name = await promptDialog({ title: 'Новый плейлист', label: 'Название плейлиста', placeholder: 'Например: Любимые песни' });
   if (!name) return;
   const pl = { id: newId(), name, fids: [], createdAt: Date.now(), updatedAt: Date.now() };
   state.playlists.push(pl);
@@ -711,7 +712,7 @@ function renderPlaylistDetail(p) {
   if (!pl) { state.currentPlId = null; renderPlaylists(); return; }
 
   const head = h(`<div class="playlist-head">
-      <button class="icon-btn" aria-label="Назад" data-act="back">←</button>
+      <button class="icon-btn" aria-label="Назад" data-act="back">${icon('back')}</button>
       <h2>${escapeHtml(pl.name)}</h2>
     </div>`);
   head.querySelector('[data-act=back]').addEventListener('click', () => { state.currentPlId = null; renderPlaylists(); });
@@ -719,8 +720,8 @@ function renderPlaylistDetail(p) {
 
   const known = pl.fids.filter(f => state.tracks.has(f));
   const actions = h(`<div class="pl-actions">
-      <button class="btn" type="button">＋ Добавить музыку</button>
-      <button class="btn ghost primary-text ${known.length ? '' : 'hidden'}" type="button">🎧 Слушать</button>
+      <button class="btn" type="button">${icon('add', 18)} Добавить музыку</button>
+      <button class="btn ghost primary-text ${known.length ? '' : 'hidden'}" type="button">${icon('headset', 18)} Слушать</button>
     </div>`);
   actions.children[0].addEventListener('click', () => {
     openTrackPickerMulti({
@@ -742,7 +743,7 @@ function renderPlaylistDetail(p) {
   p.appendChild(actions);
 
   if (!pl.fids.length) {
-    p.appendChild(emptyState('➕', 'Плейлист пуст', 'Нажмите «Добавить музыку» и выберите треки из библиотеки.'));
+    p.appendChild(emptyState('add', 'Плейлист пуст', 'Нажмите «Добавить музыку» и выберите треки из библиотеки.'));
     return;
   }
 
@@ -755,10 +756,10 @@ function renderPlaylistDetail(p) {
       list.appendChild(buildTrackRow(t, i, () => known.slice()));
     } else {
       const miss = h(`<div class="track-row" style="opacity:.55">
-          <div class="t-art" aria-hidden="true">❓</div>
+          <div class="t-art" aria-hidden="true">${icon('music')}</div>
           <div class="t-main"><div class="t-title">Файл пока не открыт</div>
           <div class="t-sub">Откройте папку с музыкой — трек вернётся</div></div>
-          <button class="icon-btn" aria-label="Убрать">🗑</button>
+          <button class="icon-btn" aria-label="Убрать">${icon('remove')}</button>
         </div>`);
       miss.querySelector('button').addEventListener('click', async () => {
         pl.fids = pl.fids.filter(f => f !== fid);
@@ -774,7 +775,7 @@ function renderPlaylistDetail(p) {
 
 async function addToPlaylistDialog(track) {
   const items = state.playlists.map(pl => ({
-    icon: '📻', label: pl.name, onClick: async () => {
+    icon: icon('queue'), label: pl.name, onClick: async () => {
       if (pl.fids.includes(track.fid)) { toast('Уже в этом плейлисте'); return; }
       pl.fids.push(track.fid);
       pl.updatedAt = Date.now();
@@ -782,8 +783,8 @@ async function addToPlaylistDialog(track) {
       toast(`«${track.title || track.name}» → «${pl.name}»`);
     },
   }));
-  items.push({ icon: '➕', label: 'Новый плейлист…', onClick: async () => {
-    const name = await promptDialog({ title: 'Новый плейлист', label: 'Название', placeholder: 'Например: Для рингтонов' });
+  items.push({ icon: icon('add'), label: 'Новый плейлист…', onClick: async () => {
+    const name = await promptDialog({ title: 'Новый плейлист', label: 'Название', placeholder: 'Например: Любимые песни' });
     if (!name) return;
     const pl = { id: newId(), name, fids: [track.fid], createdAt: Date.now(), updatedAt: Date.now() };
     state.playlists.push(pl);
@@ -854,19 +855,19 @@ export function openTrackPicker({ title = 'Выберите трек', onPick })
   const input = el.querySelector('input');
   const box = el.querySelector('.pt-list');
   if (!tracks.length) {
-    box.appendChild(emptyState('📂', 'Сначала добавьте музыку', 'Вернитесь во вкладку «Музыка» и откройте папку с песнями.'));
+    box.appendChild(emptyState('folder', 'Сначала добавьте музыку', 'Вернитесь во вкладку «Музыка» и откройте папку с песнями.'));
   }
   const m = modal(el);
   const doRender = () => {
     box.innerHTML = '';
     const vis = searchFilter(tracks, input.value);
     if (!vis.length) {
-      box.appendChild(emptyState('🔍', 'Ничего не найдено', ''));
+      box.appendChild(emptyState('search', 'Ничего не найдено', ''));
       return;
     }
     vis.forEach(t => {
       const row = h(`<div class="track-row">
-          <div class="t-art" aria-hidden="true">🎵</div>
+          <div class="t-art" aria-hidden="true">${icon('music')}</div>
           <div class="t-main"><div class="t-title"></div><div class="t-sub"></div></div>
           <div class="t-dur"></div>
         </div>`);
@@ -901,7 +902,7 @@ export function openTrackPickerMulti({ title = 'Выберите треки', ex
     box.innerHTML = '';
     const vis = searchFilter(tracks, input.value);
     if (!vis.length) {
-      box.appendChild(emptyState('➕', tracks.length ? 'Ничего не найдено' : 'Нет доступных треков',
+      box.appendChild(emptyState('add', tracks.length ? 'Ничего не найдено' : 'Нет доступных треков',
         tracks.length ? '' : 'Сначала откройте папку с музыкой во вкладке «Музыка».'));
       return;
     }

@@ -1,12 +1,16 @@
 // editor.js — визуальный редактор рингтонов: волна, выделение, фейды, сохранение
 
 import { h, modal, toast, vibrate } from './ui.js';
+import { icon } from './icons.js';
 import { unlockAudio, decodeAudio, analyze, peaksFor, findLoudest, renderClip, playRange, clamp, fmtTime } from './engine.js';
 import {
   saveRingtone, downloadBlob, shareFile, encodeMP3, sanitizeFilename,
   pickOutputDir, writeToDir, canPickDir,
 } from './export.js';
 import { refresh as refreshRingtones } from './ringtones.js';
+
+const PREVIEW_PLAY = `${icon('play', 18)} Прослушать`;
+const PREVIEW_STOP = `${icon('stop', 18)} Стоп`;
 
 const state = {
   track: null,
@@ -28,20 +32,18 @@ const state = {
 let view = null;
 const els = {};
 let cbPickTrack = null;
-let cbShowHelp = null;
 
 /* ================= Инициализация ================= */
 
-export function initEditor({ pickTrack, showHelp }) {
+export function initEditor({ pickTrack }) {
   cbPickTrack = pickTrack;
-  cbShowHelp = showHelp;
   view = document.getElementById('view-editor');
 
   view.innerHTML = `
     <div id="editor-empty"></div>
     <div id="editor-ui" class="hidden" style="display:flex;flex-direction:column;gap:14px">
       <div class="editor-head">
-        <div style="font-size:26px" aria-hidden="true">✂️</div>
+        <div class="ed-ico" aria-hidden="true">${icon('cut', 24)}</div>
         <div class="grow">
           <div class="e-title"></div>
           <div class="e-sub"></div>
@@ -79,8 +81,8 @@ export function initEditor({ pickTrack, showHelp }) {
 
       <div class="ctl-card">
         <div class="ctl-row">
-          <button class="btn primary" data-el="preview" style="flex:2">▶ Прослушать</button>
-          <button class="btn ghost" data-el="loop" style="flex:1">🔁 Петля</button>
+          <button class="btn primary" data-el="preview" style="flex:2">${PREVIEW_PLAY}</button>
+          <button class="btn ghost" data-el="loop" style="flex:1">${icon('repeat', 18)} Петля</button>
         </div>
         <div class="ctl-row">
           <button class="btn ghost" data-el="zoomOut" aria-label="Отдалить" style="flex:1">−</button>
@@ -102,7 +104,7 @@ export function initEditor({ pickTrack, showHelp }) {
           <button class="nudge-btn" data-n="1" type="button">+1 с</button>
         </div>
         <div class="ctl-row">
-          <button class="btn" data-el="loud" style="flex:1">🎯 Громкое место</button>
+          <button class="btn" data-el="loud" style="flex:1">${icon('target', 18)} Громкое место</button>
           <button class="btn ghost" data-len="15" style="flex:0 0 auto">15 с</button>
           <button class="btn ghost" data-len="30" style="flex:0 0 auto">30 с</button>
           <button class="btn ghost" data-len="45" style="flex:0 0 auto">45 с</button>
@@ -122,8 +124,8 @@ export function initEditor({ pickTrack, showHelp }) {
           <input type="range" min="50" max="160" step="5" data-el="vol">
           <span class="sl-val" data-el="volVal">100%</span>
         </div>
-        <button class="btn primary block" data-el="save" style="min-height:54px;font-size:17px">💾 Создать рингтон</button>
-        <div class="ctl-note">Отрезок сохранится в приложение и в «Загрузки» телефона. Как поставить на звонок — кнопка «?» сверху.</div>
+        <button class="btn primary block" data-el="save" style="min-height:54px;font-size:17px">${icon('save', 20)} Создать рингтон</button>
+        <div class="ctl-note">Отрезок сохранится в приложение и в «Загрузки» телефона.</div>
       </div>
     </div>
   `;
@@ -212,11 +214,11 @@ function renderEmpty() {
   els.empty.classList.remove('hidden');
   els.empty.innerHTML = `
     <div class="empty-state">
-      <span class="e-ico">✂️</span>
+      <span class="e-ico">${icon('cut', 56)}</span>
       <div class="e-title">Редактор рингтонов</div>
       <p>Выберите песню из библиотеки — появится волна.
       Выделите кусок пальцем, послушайте и сохраните.</p>
-      <button class="btn primary" data-act="pick">🎵 Выбрать трек</button>
+      <button class="btn primary" data-act="pick">${icon('music', 18)} Выбрать трек</button>
     </div>`;
   els.empty.querySelector('[data-act=pick]').addEventListener('click', () => cbPickTrack?.());
 }
@@ -560,7 +562,7 @@ function gotoLoudest() {
   state.sel = { start: t, end: Math.min(dur, t + L) };
   ensureVisible();
   redrawAll();
-  toast('Нашли самое громкое место 🎯', { timeout: 2000 });
+  toast('Нашли самое громкое место', { timeout: 2000 });
 }
 
 /* ================= Прослушивание ================= */
@@ -574,7 +576,7 @@ function startPreview() {
     loop: state.loop,
     onEnded: () => stopPreview(),
   });
-  els.btnPreview.innerHTML = '⏹ Стоп';
+  els.btnPreview.innerHTML = PREVIEW_STOP;
   els.playhead.style.display = 'block';
   const tick = () => {
     if (!state.playing) return;
@@ -599,7 +601,7 @@ export function stopPreview() {
     state.playing = null;
     cancelAnimationFrame(state.raf);
     els.playhead.style.display = 'none';
-    els.btnPreview.innerHTML = '▶ Прослушать';
+    els.btnPreview.innerHTML = PREVIEW_PLAY;
   }
 }
 
@@ -619,7 +621,7 @@ function openSaveSheet() {
   const canDir = canPickDir();
 
   const el = h(`<div>
-      <div class="sheet-title"><span class="grow">💾 Создать рингтон</span></div>
+      <div class="sheet-title"><span class="grow">Создать рингтон</span></div>
       <div class="field"><label>Название</label><input type="text" maxlength="80" spellcheck="false"></div>
       <div class="field"><label>Качество MP3</label>
         <select>
@@ -630,9 +632,9 @@ function openSaveSheet() {
       </div>
       <div class="help-note">Длительность: <b data-el="lenLbl"></b> • без потери качества звука при нарезке</div>
       <div class="sheet-actions">
-        <button class="btn primary" data-mode="download">💾 Сохранить и скачать</button>
-        <button class="btn" data-mode="share">↗ Поделиться файлом</button>
-        ${canDir ? '<button class="btn" data-mode="dir">📁 Сохранить в папку…</button>' : ''}
+        <button class="btn primary" data-mode="download">${icon('save', 18)} Сохранить и скачать</button>
+        <button class="btn" data-mode="share">${icon('share', 18)} Поделиться файлом</button>
+        ${canDir ? `<button class="btn" data-mode="dir">${icon('folder', 18)} Сохранить в папку…</button>` : ''}
         <button class="btn ghost" data-mode="app">Только в приложение</button>
       </div>
       <div class="help-note">«Поделиться» на Android открывает системное меню — там можно сохранить файл в «Файлы», в том числе на SD-карту.</div>
@@ -668,10 +670,7 @@ async function doSave(mode, { name, bitrate }) {
 
     if (mode === 'download') {
       downloadBlob(blob, `${title}.mp3`);
-      toast(`Рингтон «${title}» готов — файл в «Загрузках»`, {
-        actionLabel: 'Как поставить?',
-        onAction: () => cbShowHelp?.(),
-      });
+      toast(`Рингтон «${title}» готов — файл в «Загрузках»`);
     } else if (mode === 'share') {
       const res = await shareFile(blob, `${title}.mp3`, title);
       if (res === 'shared') toast('Рингтон отправлен');

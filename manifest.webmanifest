@@ -1,7 +1,7 @@
 {
-  "name": "Рингтон Студия",
-  "short_name": "Рингтоны",
-  "description": "Музыка, обрезка треков и создание рингтонов прямо в браузере. Работает офлайн.",
+  "name": "Ringtone Studio",
+  "short_name": "Ringtone Studio",
+  "description": "Музыка, обрезка треков и создание рингтонов прямо в браузере.",
   "lang": "ru",
   "dir": "ltr",
   "start_url": "./",

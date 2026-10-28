@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Рингтон Студия</title>
-  <meta name="description" content="Музыка, обрезка треков и создание рингтонов прямо в браузере. Работает офлайн, без интернета.">
+  <title>Ringtone Studio</title>
+  <meta name="description" content="Музыка, обрезка треков и создание рингтонов прямо в браузере.">
   <meta name="theme-color" content="#0f1115">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
@@ -12,19 +12,19 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Рингтоны">
+  <meta name="apple-mobile-web-app-title" content="Ringtone Studio">
   <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
   <div id="app">
     <header class="app-header">
       <div class="brand">
-        <div class="brand-logo" aria-hidden="true">♪</div>
-        <div class="brand-name">Рингтон Студия</div>
+        <div class="brand-logo" data-icon="music" aria-hidden="true"></div>
+        <div class="brand-name">Ringtone Studio</div>
       </div>
       <div class="header-actions">
         <button id="btn-install" class="btn btn-small hidden">Установить</button>
-        <button id="btn-help" class="icon-btn" title="Как поставить рингтон" aria-label="Помощь">
+        <button id="btn-help" class="icon-btn hidden" title="Как сделать рингтон на iPhone" aria-label="Как сделать рингтон на iPhone">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm.9 15.5h-1.8v-1.8h1.8v1.8zm1.9-6.6-.8.8c-.6.6-1 1.1-1 2.1h-1.8v-.4c0-.8.3-1.5.9-2.1l1.1-1.1c.3-.3.5-.7.5-1.2 0-1-.8-1.7-1.8-1.7s-1.8.8-1.8 1.8H8.5c0-2 1.6-3.5 3.6-3.5s3.4 1.4 3.4 3.3c0 .8-.3 1.4-.7 2z"/></svg>
         </button>
       </div>
@@ -40,15 +40,15 @@
 
     <nav id="tabbar" class="tabbar" aria-label="Разделы">
       <button class="tab active" data-tab="music" type="button">
-        <span class="tab-icon" aria-hidden="true">🎵</span>
+        <span class="tab-icon" data-icon="library" aria-hidden="true"></span>
         <span class="tab-label">Музыка</span>
       </button>
       <button class="tab" data-tab="editor" type="button">
-        <span class="tab-icon" aria-hidden="true">✂️</span>
+        <span class="tab-icon" data-icon="cut" aria-hidden="true"></span>
         <span class="tab-label">Обрезка</span>
       </button>
       <button class="tab" data-tab="ringtones" type="button">
-        <span class="tab-icon" aria-hidden="true">🔔</span>
+        <span class="tab-icon" data-icon="bell" aria-hidden="true"></span>
         <span class="tab-label">Рингтоны</span>
       </button>
     </nav>
