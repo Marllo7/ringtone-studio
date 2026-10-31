@@ -1,17 +1,17 @@
 /* ===== Ringtone Studio — тёмная тема, mobile-first ===== */
 
 :root {
-  --bg: #0a100d;
-  --surface: #101713;
-  --surface-2: #15201a;
-  --surface-3: #1c2b23;
-  --border: #22332a;
-  --border-light: #2f4438;
-  --text: #e9f2ec;
-  --muted: #88a295;
-  --accent: #34d399;
-  --accent-2: #0e9f6e;
-  --grad: linear-gradient(135deg, #34d399, #0e9f6e);
+  --bg: #0a1811;
+  --surface: #171a21;
+  --surface-2: #1e2230;
+  --surface-3: #262b3b;
+  --border: #2a2f3d;
+  --border-light: #3a4152;
+  --text: #eceef4;
+  --muted: #8b93a7;
+  --accent: #ff7a3d;
+  --accent-2: #a93cff;
+  --grad: linear-gradient(135deg, #ff7a3d, #a93cff);
   --danger: #ff5a5a;
   --ok: #3ecf8e;
   --radius: 16px;
@@ -31,6 +31,54 @@ body {
   font: 16.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overscroll-behavior: none;
 }
+
+/* ===== Тёмный изумрудный шёлк: ткань со складками (фон) ===== */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* складки: широкие диагональные волны света и тени, размытые до мягкой ткани */
+body::before {
+  inset: -80px;
+  background:
+    repeating-linear-gradient(105deg,
+      transparent 0px,
+      rgba(184, 255, 226, .06) 70px,
+      transparent 170px,
+      rgba(3, 44, 30, .6) 250px,
+      transparent 380px),
+    repeating-linear-gradient(68deg,
+      transparent 0px,
+      rgba(0, 0, 0, .22) 110px,
+      transparent 230px,
+      rgba(184, 255, 226, .04) 330px,
+      transparent 460px),
+    radial-gradient(ellipse 150% 70% at 50% -20%, rgba(86, 226, 170, .14), transparent 55%),
+    linear-gradient(170deg, #103024 0%, #0a1811 55%, #0d241a 100%);
+  filter: blur(34px) saturate(1.25);
+}
+
+/* мягкий блик, медленно «дышит» по ткани */
+body::after {
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 30% at 20% 10%, rgba(196, 255, 230, .075), transparent 70%),
+    radial-gradient(ellipse 48% 26% at 82% 78%, rgba(52, 211, 153, .06), transparent 70%);
+  animation: silk-sheen 16s ease-in-out infinite alternate;
+}
+
+@keyframes silk-sheen {
+  from { opacity: .45; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; opacity: .8; }
+}
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
 input, select, textarea { font: inherit; }
 .hidden { display: none !important; }
@@ -43,6 +91,7 @@ input, select, textarea { font: inherit; }
   display: flex;
   flex-direction: column;
   position: relative;
+  z-index: 1;
 }
 
 /* ===== Шапка ===== */
@@ -51,7 +100,7 @@ input, select, textarea { font: inherit; }
   padding: 10px 14px 8px;
   padding-top: calc(10px + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--border);
-  background: rgba(10,16,13,.92);
+  background: rgba(13,26,19,.92);
   position: sticky; top: 0; z-index: 20;
   backdrop-filter: blur(10px);
 }
@@ -61,7 +110,7 @@ input, select, textarea { font: inherit; }
   background: var(--grad);
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; font-weight: 700; color: #fff;
-  box-shadow: 0 3px 12px rgba(14,159,110,.45), inset 0 1px 0 rgba(255,255,255,.25);
+  box-shadow: 0 3px 10px rgba(255,122,61,.35);
 }
 .brand-logo svg { width: 20px; height: 20px; display: block; }
 .btn svg { width: 18px; height: 18px; flex: 0 0 18px; }
@@ -93,7 +142,7 @@ input, select, textarea { font: inherit; }
   -webkit-user-select: none; user-select: none;
 }
 .btn:active { transform: scale(.97); }
-.btn.primary { background: var(--grad); border: 0; color: #fff; box-shadow: 0 4px 18px rgba(14,159,110,.38), inset 0 1px 0 rgba(255,255,255,.22); }
+.btn.primary { background: var(--grad); border: 0; color: #fff; box-shadow: 0 4px 16px rgba(169,60,255,.3); }
 .btn.danger { background: rgba(255,90,90,.12); border-color: rgba(255,90,90,.4); color: #ff8d8d; }
 .btn.ghost { background: transparent; border-color: var(--border); }
 .btn.block { width: 100%; }
@@ -140,7 +189,7 @@ input, select, textarea { font: inherit; }
 .source-btn .s-sub { font-size: 12.5px; color: var(--muted); }
 .source-btn:active { transform: scale(.98); border-color: var(--border-light); }
 
-.resume-line { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(14,159,110,.08); border: 1px dashed rgba(14,159,110,.45); font-size: 14.5px; }
+.resume-line { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(169,60,255,.08); border: 1px dashed rgba(169,60,255,.45); font-size: 14.5px; }
 .resume-line .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ===== Список треков ===== */
@@ -152,7 +201,7 @@ input, select, textarea { font: inherit; }
   -webkit-user-select: none; user-select: none;
 }
 .track-row:active { background: var(--surface-2); }
-.track-row.playing { border-color: rgba(52,211,153,.55); background: rgba(52,211,153,.07); }
+.track-row.playing { border-color: rgba(255,122,61,.55); background: rgba(255,122,61,.07); }
 .t-art {
   width: 44px; height: 44px; flex: 0 0 44px; border-radius: 10px;
   background: var(--surface-3); color: var(--muted);
@@ -184,7 +233,7 @@ input, select, textarea { font: inherit; }
 .play-mini {
   width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%;
   background: var(--grad); color: #fff; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 3px 10px rgba(14,159,110,.3);
+  box-shadow: 0 3px 10px rgba(169,60,255,.3);
 }
 .play-mini:active { transform: scale(.93); }
 .play-mini svg { width: 18px; height: 18px; }
@@ -206,7 +255,7 @@ input, select, textarea { font: inherit; }
   background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
   color: var(--text); outline: none; border-radius: 11px;
 }
-.search-wrap input:focus { border-color: rgba(52,211,153,.6); }
+.search-wrap input:focus { border-color: rgba(255,122,61,.6); }
 .search-wrap::before {
   content: ""; position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
   width: 17px; height: 17px; opacity: .6;
@@ -233,7 +282,7 @@ input, select, textarea { font: inherit; }
 /* ===== Плейбар ===== */
 .playbar {
   border-top: 1px solid var(--border);
-  background: rgba(16,23,19,.97);
+  background: rgba(17,28,22,.94);
   backdrop-filter: blur(12px);
   padding: 8px 14px calc(8px + var(--safe-b));
   display: flex; flex-direction: column; gap: 6px;
@@ -252,7 +301,7 @@ input, select, textarea { font: inherit; }
 }
 .pb-btn svg { width: 22px; height: 22px; }
 .pb-btn.small-btn svg { width: 18px; height: 18px; }
-.pb-btn.play { background: var(--grad); color: #fff; width: 48px; height: 48px; flex-basis: 48px; box-shadow: 0 3px 12px rgba(14,159,110,.35); }
+.pb-btn.play { background: var(--grad); color: #fff; width: 48px; height: 48px; flex-basis: 48px; box-shadow: 0 3px 12px rgba(169,60,255,.35); }
 .pb-btn.on { color: var(--accent); }
 .pb-progress { display: flex; align-items: center; gap: 10px; }
 .pb-progress input[type=range] { flex: 1; }
@@ -275,7 +324,7 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
 /* ===== Таб-бар ===== */
 .tabbar {
   display: flex; border-top: 1px solid var(--border);
-  background: rgba(10,16,13,.97); backdrop-filter: blur(12px);
+  background: rgba(13,26,19,.95); backdrop-filter: blur(12px);
   padding-bottom: var(--safe-b);
   position: relative; z-index: 15;
 }
@@ -298,9 +347,9 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
 .wave-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 10px 12px; position: relative; }
 .wave-wrap { position: relative; }
 #wave-canvas, #mini-canvas { display: block; width: 100%; touch-action: none; }
-#wave-canvas { height: 190px; border-radius: 10px; background: #0d1512; }
+#wave-canvas { height: 190px; border-radius: 10px; background: #0e1b15; }
 .mini-wrap { position: relative; margin-top: 10px; }
-#mini-canvas { height: 52px; border-radius: 8px; background: #0d1512; }
+#mini-canvas { height: 52px; border-radius: 8px; background: #0e1b15; }
 .playhead {
   position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px;
   background: var(--danger); border-radius: 1px; display: none; pointer-events: none;
@@ -308,7 +357,7 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
 }
 .wave-loading {
   position: absolute; inset: 0; border-radius: 10px;
-  background: rgba(13,21,18,.8); backdrop-filter: blur(3px);
+  background: rgba(14,25,19,.8); backdrop-filter: blur(3px);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   font-size: 14.5px; color: var(--muted); z-index: 5;
 }
@@ -406,7 +455,7 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
   background: var(--surface-2); border: 1px solid var(--border-light); border-radius: 12px;
   color: var(--text); outline: none;
 }
-.field input:focus, .field select:focus { border-color: rgba(52,211,153,.6); }
+.field input:focus, .field select:focus { border-color: rgba(255,122,61,.6); }
 .field + .field { margin-top: 10px; }
 .sheet-actions { display: flex; flex-direction: column; gap: 8px; }
 
@@ -425,7 +474,7 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
 .ring-play {
   width: 48px; height: 48px; flex: 0 0 48px; border-radius: 50%;
   background: var(--grad); color: #fff; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 3px 10px rgba(14,159,110,.3);
+  box-shadow: 0 3px 10px rgba(169,60,255,.3);
 }
 .ring-play svg { width: 20px; height: 20px; }
 .ring-play.playing svg { animation: pulse 1.2s ease-in-out infinite; }
