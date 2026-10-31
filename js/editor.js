@@ -313,9 +313,9 @@ function drawWave() {
   // фон выделения
   const x0 = timeToX(state.sel.start);
   const x1 = timeToX(state.sel.end);
-  ctx.fillStyle = 'rgba(255,122,61,.10)';
+  ctx.fillStyle = 'rgba(52,211,153,.12)';
   ctx.fillRect(x0, waveTop, x1 - x0, waveH);
-  ctx.strokeStyle = '#ff7a3d';
+  ctx.strokeStyle = '#34d399';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x0, waveTop); ctx.lineTo(x0, waveTop + waveH);
@@ -354,7 +354,7 @@ function drawHandle(ctx, x, top, h) {
   const w = 10, hh = Math.min(46, h - 10);
   const y = top + h / 2 - hh / 2;
   ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = '#ff7a3d';
+  ctx.strokeStyle = '#34d399';
   ctx.lineWidth = 2;
   const r = 5;
   ctx.beginPath();
@@ -390,9 +390,9 @@ function drawMini() {
   // выделение
   const x0 = (state.sel.start / dur) * W;
   const x1 = (state.sel.end / dur) * W;
-  ctx.fillStyle = 'rgba(255,122,61,.25)';
+  ctx.fillStyle = 'rgba(52,211,153,.28)';
   ctx.fillRect(x0, 0, x1 - x0, H);
-  ctx.strokeStyle = '#ff7a3d';
+  ctx.strokeStyle = '#34d399';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x0, 0); ctx.lineTo(x0, H);

@@ -58,7 +58,20 @@ function buildMarkup() {
       <button data-sub="folders" type="button">Папки</button>
       <button data-sub="playlists" type="button">Плейлисты</button>
     </div>
-    <section id="panel-all"></section>
+    <section id="panel-all">
+      <div class="list-toolbar">
+        <div class="search-wrap"><input type="search" placeholder="Поиск: название или исполнитель…" aria-label="Поиск"></div>
+        <select aria-label="Сортировка">
+          <option value="title">По названию</option>
+          <option value="artist">По исполнителю</option>
+          <option value="name">По файлу</option>
+          <option value="added">Сначала новые</option>
+        </select>
+      </div>
+      <div class="count-line"></div>
+      <div class="enrich-line" hidden></div>
+      <div id="all-list"></div>
+    </section>
     <section id="panel-folders" class="hidden"></section>
     <section id="panel-playlists" class="hidden"></section>
     <!--
@@ -74,7 +87,12 @@ function buildMarkup() {
   els.panelAll = view.querySelector('#panel-all');
   els.panelFolders = view.querySelector('#panel-folders');
   els.panelPlaylists = view.querySelector('#panel-playlists');
+  els.panelAllList = view.querySelector('#all-list');
   els.sources = view.querySelector('#sources');
+  els.searchInput = view.querySelector('#panel-all .search-wrap input');
+  els.sortSel = view.querySelector('#panel-all .list-toolbar select');
+  els.countLine = view.querySelector('#panel-all .count-line');
+  els.sortSel.value = state.sortMode || 'title';
   els.inFiles = view.querySelector('#in-files');
   els.inFolder = view.querySelector('#in-folder');
   els.inM3u = view.querySelector('#in-m3u');
@@ -83,6 +101,12 @@ function buildMarkup() {
 }
 
 function bindInputs() {
+  let searchTimer = null;
+  els.searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderAll, 200);
+  });
+  els.sortSel.addEventListener('change', () => { state.sortMode = els.sortSel.value; renderAll(); });
   els.inFiles.addEventListener('change', () => {
     addFiles(els.inFiles.files);
     els.inFiles.value = '';
@@ -109,15 +133,15 @@ function renderSources() {
   const dirBtn = h(`<button class="source-btn" type="button">
       <span class="s-ico" aria-hidden="true">${icon('folderOpen', 28)}</span>
       <span class="s-name">${hasDirPicker() || supportsDirAttr() ? 'Открыть папку' : 'Выбрать файлы'}</span>
-      <span class="s-sub">с музыкой — сразу все песни</span>
+      <span class="s-sub">в окне телефона нажмите «Выбрать»</span>
     </button>`);
   dirBtn.addEventListener('click', openDirPicker);
   const fileBtn = h(`<button class="source-btn" type="button">
       <span class="s-ico mp-ico" aria-hidden="true">${icon('music', 28)}</span>
       <span class="s-name">Выбрать файлы</span>
-      <span class="s-sub">MP3, M4A, WAV — из приложения «Файлы»</span>
+      <span class="s-sub">отметьте песни галочками — «Открыть»</span>
     </button>`);
-  fileBtn.addEventListener('click', () => els.inFiles.click());
+  fileBtn.addEventListener('click', openFilesInput);
   els.sources.append(dirBtn, fileBtn);
   if (state.savedDirName && hasDirPicker()) {
     const r = h(`<div class="resume-line" style="grid-column:1/-1">
@@ -152,7 +176,7 @@ function registerFile(file, path) {
 
 function addFiles(fileList) {
   if (!fileList || !fileList.length) {
-    toast('Файлы не выбраны. Откройте приложение «Файлы», а не «Галерею».', { timeout: 3500 });
+    toast('Файлы не выбраны. В окне телефона отметьте песни галочками и нажмите «Открыть».', { timeout: 4500 });
     return;
   }
   const added = [];
@@ -162,17 +186,62 @@ function addFiles(fileList) {
     const t = registerFile(f, path);
     if (t) added.push(t);
   }
-  afterAdd(added, fileList.length);
+  if (added.length) afterAdd(added, fileList.length);
+  else showNoMusicFound(fileList.length, false);
 }
 
-function afterAdd(added, attempted) {
+function afterAdd(added, seenFiles) {
   if (added.length) {
     enqueueEnrich(added);
     renderEverything(true);
     toast(`Добавлено треков: ${added.length}`, { timeout: 2500 });
-  } else if (attempted) {
-    toast('Аудиофайлы не найдены. Выберите MP3, M4A или WAV в приложении «Файлы».', { timeout: 4000 });
+  } else {
+    showNoMusicFound(seenFiles || 0, true);
   }
+}
+
+/** Понятное объяснение, почему музыка не добавилась (вместо короткого тоста). */
+function showNoMusicFound(seenFiles, fromFolder) {
+  const el = h(`<div>
+    <div class="sheet-title"><span class="grow">Музыка не найдена</span></div>
+    <div class="help-step"><span class="hs-n">!</span>
+      <span>${seenFiles > 0
+        ? `В выбранных файлах — ${seenFiles} шт., но среди них нет музыки. Поддерживаются MP3, M4A, AAC, WAV, OGG, FLAC.`
+        : (fromFolder
+          ? 'Папка пустая или выбор не подтверждён. В окне телефона найдите папку с песнями и нажмите кнопку <b>«ВЫБРАТЬ»</b> внизу экрана.'
+          : 'Файлы не выбраны. В окне телефона отмечайте песни галочками и нажмите кнопку <b>«ОТКРЫТЬ»</b>.')}</span>
+    </div>
+    <div class="help-note">Тап по файлу в окне телефона не подходит — там приложение может только «открыть с помощью». Нужно подтвердить выбор кнопкой внизу окна.</div>
+    <button class="btn primary block" data-act="ok">Понятно</button>
+  </div>`);
+  el.querySelector('[data-act=ok]').addEventListener('click', () => el.__m.close());
+  el.__m = modal(el);
+}
+
+/** Однократная подсказка перед системным окном выбора (телефоны Android). */
+function showPickerHint(onReady) {
+  const el = h(`<div>
+    <div class="sheet-title"><span class="grow">Сейчас откроется окно телефона</span></div>
+    <div class="help-steps">
+      <div class="help-step"><span class="hs-n">1</span><span>Найдите папку с музыкой — можно на SD-карте. Открыть можно только папку.</span></div>
+      <div class="help-step"><span class="hs-n">2</span><span>Нажмите кнопку <b>«ВЫБРАТЬ»</b> внизу окна (иногда «ОК») — вся музыка из папки добавится в приложение.</span></div>
+    </div>
+    <div class="help-note">Выбираете файлы по одному? Отмечайте их галочками и нажмите «ОТКРЫТЬ» внизу окна.</div>
+    <button class="btn primary block" data-act="ok">Понятно, открыть</button>
+  </div>`);
+  el.querySelector('[data-act=ok]').addEventListener('click', () => {
+    try { localStorage.setItem('rs-pickhint', '1'); } catch { /* приватный режим */ }
+    el.__m.close();
+    onReady();
+  });
+  el.__m = modal(el, { locked: true });
+}
+
+function maybePickerHint(onReady) {
+  let seen = false;
+  try { seen = !!localStorage.getItem('rs-pickhint'); } catch { /* приватный режим */ }
+  if (seen) onReady();
+  else showPickerHint(onReady);
 }
 
 async function openDirPicker() {
@@ -180,41 +249,54 @@ async function openDirPicker() {
     try {
       const dir = await window.showDirectoryPicker({ mode: 'read' });
       const t = toast('Читаем папку…', { timeout: 0 });
-      const added = await walkDir(dir, '');
+      const { added, seen } = await walkDir(dir, '');
       const name = dir.name || 'папка';
       state.savedDirHandle = dir;
       state.savedDirName = name;
       await dbPut('handles', { id: 'musicDir', name, handle: dir });
       t.close();
-      afterAdd(added, added.length + 1);
-      renderSources();
+      afterAdd(added, seen);
+      if (added.length) renderSources();
+      return;
     } catch (e) {
-      if (e?.name !== 'AbortError') toast('Не удалось открыть папку');
+      if (e?.name === 'AbortError') return;
+      // API неожиданно не сработал — пробуем выбор папки через окно телефона
+      if (supportsDirAttr()) { openFolderInput(); return; }
+      toast('Не удалось открыть папку');
     }
   } else if (supportsDirAttr()) {
-    els.inFolder.click();
+    openFolderInput();
   } else {
-    els.inFiles.click();
+    openFilesInput();
   }
 }
 
-async function walkDir(handle, prefix) {
+function openFolderInput() {
+  maybePickerHint(() => els.inFolder.click());
+}
+
+function openFilesInput() {
+  maybePickerHint(() => els.inFiles.click());
+}
+
+async function walkDir(handle, prefix, stats = { files: 0 }) {
   const added = [];
   try {
     for await (const entry of handle.values()) {
       if (entry.kind === 'file') {
         try {
           const f = await entry.getFile();
+          stats.files++;
           const t = registerFile(f, prefix);
           if (t) added.push(t);
         } catch { /* файл недоступен */ }
       } else if (entry.kind === 'directory' && !entry.name.startsWith('.')) {
         const sub = prefix ? `${prefix}/${entry.name}` : entry.name;
-        added.push(...await walkDir(entry, sub));
+        added.push(...await walkDir(entry, sub, stats));
       }
     }
   } catch { /* нет прав чтения подпапки */ }
-  return added;
+  return { added, seen: stats.files };
 }
 
 async function resumeSavedDir() {
@@ -225,9 +307,9 @@ async function resumeSavedDir() {
     if (perm !== 'granted') perm = await handle.requestPermission({ mode: 'read' });
     if (perm !== 'granted') { toast('Доступ к папке не выдан'); return; }
     const t = toast('Читаем папку…', { timeout: 0 });
-    const added = await walkDir(handle, '');
+    const { added, seen } = await walkDir(handle, '');
     t.close();
-    afterAdd(added, added.length + 1);
+    afterAdd(added, seen);
   } catch {
     toast('Не удалось открыть папку');
   }
@@ -342,48 +424,23 @@ function renderAll() {
   const visible = searchFilter(sorted, q);
   state.currentAllFids = visible.map(t => t.fid);
 
-  els.panelAll.innerHTML = '';
-  const toolbar = h(`<div class="list-toolbar">
-      <div class="search-wrap"><input type="search" placeholder="Поиск: название или исполнитель…" aria-label="Поиск"></div>
-      <select aria-label="Сортировка">
-        <option value="title">По названию</option>
-        <option value="artist">По исполнителю</option>
-        <option value="name">По файлу</option>
-        <option value="added">Сначала новые</option>
-      </select>
-    </div>`);
-  els.searchInput = toolbar.querySelector('input');
-  els.sortSel = toolbar.querySelector('select');
-  els.sortSel.value = state.sortMode || 'title';
-  els.searchInput.value = q;
-  els.sortSel.addEventListener('change', () => { state.sortMode = els.sortSel.value; renderAll(); });
-  let searchTimer = null;
-  els.searchInput.addEventListener('input', () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(renderAll, 180);
-  });
-  els.panelAll.appendChild(toolbar);
-
-  const stats = h(`<div>
-      <div class="count-line"></div>
-      <div class="enrich-line" hidden></div>
-    </div>`);
-  els.panelAll.appendChild(stats);
-  stats.querySelector('.count-line').textContent = visible.length
+  const box = els.panelAllList;
+  box.innerHTML = '';
+  els.countLine.textContent = visible.length
     ? (q ? `Найдено: ${visible.length}` : `Треков: ${visible.length}`)
     : '';
   updateEnrichStatus();
 
   if (!state.tracks.size) {
-    els.panelAll.appendChild(emptyState('library', 'Библиотека пуста',
-      'Нажмите «Открыть папку» и выберите папку с музыкой на телефоне или карте памяти. Все треки появятся здесь.'));
+    box.appendChild(emptyState('library', 'Библиотека пуста',
+      'Нажмите «Открыть папку», найдите музыку в окне телефона и нажмите «Выбрать» внизу окна.'));
     return;
   }
   if (!visible.length) {
-    els.panelAll.appendChild(emptyState('search', 'Ничего не найдено', 'Попробуйте изменить запрос.'));
+    box.appendChild(emptyState('search', 'Ничего не найдено', 'Попробуйте изменить запрос.'));
     return;
   }
-  renderBatchedList(els.panelAll, visible, state.currentAllFids);
+  renderBatchedList(box, visible, state.currentAllFids);
 }
 
 function emptyState(icoName, title, text) {
@@ -398,11 +455,14 @@ function renderBatchedList(container, items, contextFids) {
   container.appendChild(list);
   let rendered = 0;
   const BATCH = 120;
+  const idxMap = contextFids
+    ? new Map(contextFids.map((f, i) => [f, i]))
+    : null;
   const renderNext = () => {
     const frag = document.createDocumentFragment();
     const end = Math.min(items.length, rendered + BATCH);
     for (let i = rendered; i < end; i++) {
-      const idx = contextFids ? contextFids.indexOf(items[i].fid) : i;
+      const idx = idxMap ? (idxMap.get(items[i].fid) ?? i) : i;
       frag.appendChild(buildTrackRow(items[i], idx, contextFids ? () => [...contextFids] : null));
     }
     rendered = end;
