@@ -14,6 +14,7 @@ const ICONS = {
 let audio = null;
 let resolve = null;         // fid → track
 let onEditTrack = null;
+let errStreak = 0;          // подряд идущие ошибки воспроизведения (защита от цикла)
 
 let queue = [];
 let idx = -1;
@@ -24,7 +25,7 @@ let currentUrl = null;
 let els = null;
 let scrubbing = false;
 
-const coverCache = new Map(); // fid → objectURL (мало, LRU ниже)
+const coverCache = new Map(); // fid → { url, dataUrl } (мало, LRU ниже)
 
 export function initPlayer({ resolve: res, onEditTrack: onEdit }) {
   resolve = res;
@@ -106,15 +107,29 @@ export function initPlayer({ resolve: res, onEditTrack: onEdit }) {
   });
   audio.addEventListener('play', () => { els.btnToggle.innerHTML = ICONS.pause; });
   audio.addEventListener('pause', () => { els.btnToggle.innerHTML = ICONS.play; });
+  audio.addEventListener('playing', () => { errStreak = 0; });
   audio.addEventListener('ended', () => {
     if (repeat === 'one') { audio.currentTime = 0; audio.play().catch(() => {}); return; }
     next(true);
   });
   audio.addEventListener('error', () => {
-    if (idx >= 0) { toast('Не удалось воспроизвести файл, пропускаем'); next(true); }
+    if (idx < 0 || !queue.length) return;
+    errStreak++;
+    if (errStreak >= queue.length) {
+      errStreak = 0;
+      audio.pause();
+      toast('Не удалось воспроизвести файл');
+      return;
+    }
+    toast('Не удалось воспроизвести файл, пропускаем');
+    next(true);
   });
 
   setupMediaSession();
+  // если заиграл редактор или рингтоны — приостанавливаем плеер
+  document.addEventListener('rs:audio-focus', (e) => {
+    if (e.detail !== 'player' && !audio.paused) audio.pause();
+  });
 }
 
 function fmt(s) {
@@ -156,6 +171,7 @@ function load(autoplay) {
   setArt(null);
   loadCoverAsync(track);
   document.dispatchEvent(new CustomEvent('rs:playing', { detail: track.fid }));
+  document.dispatchEvent(new CustomEvent('rs:audio-focus', { detail: 'player' }));
   if (autoplay) audio.play().catch(() => {});
   updateMediaSession(track);
 }
@@ -165,10 +181,22 @@ function setArt(url) {
   else els.art.innerHTML = icon('music');
 }
 
+/** Обложка для MediaSession: data: URL (blob: не показывается на локскрине Android). */
+function coverToDataURL(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+
 async function loadCoverAsync(track) {
   const fid = track.fid;
-  if (coverCache.has(fid)) {
-    setArt(coverCache.get(fid));
+  const cached = coverCache.get(fid);
+  if (cached) {
+    setArt(cached.url);
+    updateMediaSession(track, cached.dataUrl);
     return;
   }
   try {
@@ -176,15 +204,18 @@ async function loadCoverAsync(track) {
     if (queue[idx] !== fid) return; // трек уже сменился
     if (tags.cover) {
       const url = URL.createObjectURL(tags.cover);
+      let dataUrl = null;
+      try { dataUrl = await coverToDataURL(tags.cover); } catch { /* локскрин без обложки */ }
+      if (queue[idx] !== fid) { URL.revokeObjectURL(url); return; }
       if (coverCache.size > 12) {
         const first = coverCache.keys().next().value;
         const old = coverCache.get(first);
         coverCache.delete(first);
-        URL.revokeObjectURL(old);
+        URL.revokeObjectURL(old.url);
       }
-      coverCache.set(fid, url);
+      coverCache.set(fid, { url, dataUrl });
       setArt(url);
-      updateMediaSession(track, url);
+      updateMediaSession(track, dataUrl || url);
     }
   } catch { /* без обложки */ }
 }

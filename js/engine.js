@@ -165,6 +165,7 @@ export function playRange(buffer, start, end, { loop = false, onEnded } = {}) {
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   const src = ctx.createBufferSource();
   src.buffer = buffer;
+  src.connect(ctx.destination); // без подключения к выходу звука не будет
   const t0 = ctx.currentTime;
   let stopped = false;
   if (loop) {

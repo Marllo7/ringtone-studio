@@ -156,7 +156,10 @@ export function initEditor({ pickTrack }) {
 
   // ==== события ====
   view.querySelector('[data-el=change]').addEventListener('click', () => cbPickTrack?.());
-  els.btnPreview.addEventListener('click', () => { stopPreview(); startPreview(); });
+  els.btnPreview.addEventListener('click', () => {
+    if (state.playing) { stopPreview(); return; }
+    startPreview();
+  });
   els.btnLoop.addEventListener('click', () => {
     state.loop = !state.loop;
     els.btnLoop.classList.toggle('primary', state.loop);
@@ -203,6 +206,10 @@ export function initEditor({ pickTrack }) {
   new ResizeObserver(() => redrawAll()).observe(els.wave);
 
   document.addEventListener('keydown', onKeydown);
+  // если заиграл другой источник (плеер/рингтоны) — останавливаем предпросмотр
+  document.addEventListener('rs:audio-focus', (e) => {
+    if (e.detail !== 'editor') stopPreview();
+  });
 }
 
 function fmtSec(s) {
@@ -572,15 +579,28 @@ function startPreview() {
   const s = state.sel;
   if (s.end - s.start < 0.15) { toast('Выделите отрезок на волне'); return; }
   unlockAudio();
-  state.playing = playRange(state.buffer, s.start, s.end, {
+  document.dispatchEvent(new CustomEvent('rs:audio-focus', { detail: 'editor' }));
+  // Слушаем то, что будет сохранено: фейды и громкость применяются к копии.
+  // Длинные отрезки (> 2 мин) играем как есть — обработка заняла бы много памяти.
+  let buf = state.buffer;
+  let base = s.start; // position() возвращает абсолютное время исходного буфера
+  if (s.end - s.start <= 120) {
+    try {
+      buf = renderClip(state.buffer, s.start, s.end, state.fade.in, state.fade.out, gainDb());
+      base = 0;                       // рендер идёт от нуля
+    } catch { buf = state.buffer; base = s.start; }
+  }
+  const span = buf === state.buffer ? (s.end - s.start) : buf.duration;
+  state.playing = playRange(buf, base, base + Math.max(0.01, span), {
     loop: state.loop,
     onEnded: () => stopPreview(),
   });
   els.btnPreview.innerHTML = PREVIEW_STOP;
   els.playhead.style.display = 'block';
+  const selStart = s.start;
   const tick = () => {
     if (!state.playing) return;
-    const t = state.playing.position();
+    const t = base === 0 ? selStart + state.playing.position() : state.playing.position();
     const x = timeToX(t);
     els.playhead.style.left = `${x}px`;
     // автопрокрутка окна
@@ -654,6 +674,10 @@ async function doSave(mode, { name, bitrate }) {
   state.saving = true;
   const tr = state.track;
   const s = state.sel;
+  // Папку спрашиваем сразу: после долгого кодирования окно выбора может
+  // не открыться — система требует «свежее» нажатие пользователя
+  let dir = null;
+  if (mode === 'dir') dir = await pickOutputDir();
   const t = toast('Готовим отрезок…', { timeout: 0 });
   try {
     const clip = renderClip(state.buffer, s.start, s.end, state.fade.in, state.fade.out, gainDb());
@@ -676,11 +700,12 @@ async function doSave(mode, { name, bitrate }) {
       if (res === 'shared') toast('Рингтон отправлен');
       else if (res === 'downloaded') toast('Файл сохранён в «Загрузках»');
     } else if (mode === 'dir') {
-      const dir = await pickOutputDir();
       if (dir) {
         const ok = await writeToDir(dir, blob, `${title}.mp3`);
         if (ok) toast(`Сохранено: ${ok}`);
         else toast('Не удалось записать файл в папку');
+      } else {
+        toast('Папка не выбрана — рингтон сохранён в приложение');
       }
     } else {
       toast(`Рингтон «${title}» сохранён в приложении`, {

@@ -50,13 +50,13 @@ function showHelpModal() {
 function showOnboarding() {
   const el = h(`<div>
     <div class="sheet-title"><span class="grow">👋 Добро пожаловать!</span></div>
-    <div class="help-step"><span class="hs-n">1</span><span><b>«Музыка»</b> — откройте папку с песнями (видна и SD-карта) или выберите файлы. Вся музыка появится в приложении.</span></div>
+    <div class="help-step"><span class="hs-n">1</span><span><b>«Музыка»</b> — откройте папку с песнями (видна и SD-карта) или выберите файлы. Плеер не нужен: вся музыка будет играть прямо в приложении.</span></div>
     <div class="help-step"><span class="hs-n">2</span><span><b>«Обрезка»</b> — выберите песню, выделите на волне лучший кусок или нажмите «Громкое место».</span></div>
     <div class="help-step"><span class="hs-n">3</span><span><b>«Создать рингтон»</b> — отрезок сохранится в приложение и в «Загрузки» телефона.</span></div>
     <button class="btn primary block" data-act="ok">Начать</button>
   </div>`);
   el.querySelector('[data-act=ok]').addEventListener('click', () => {
-    localStorage.setItem('rs-onboarded', '1');
+    try { localStorage.setItem('rs-onboarded', '1'); } catch { /* приватный режим */ }
     el.__m.close();
   });
   el.__m = modal(el, { locked: true });
@@ -136,7 +136,9 @@ function init() {
     toast('Приложение установлено 🎉');
   });
 
-  if (!localStorage.getItem('rs-onboarded')) showOnboarding();
+  let onboarded = false;
+  try { onboarded = !!localStorage.getItem('rs-onboarded'); } catch { /* приватный режим */ }
+  if (!onboarded) showOnboarding();
 
   registerSW();
 }

@@ -40,8 +40,10 @@ function decodeText(bytes) {
   try {
     if (enc === 0) return trimNull(new TextDecoder('windows-1252').decode(rest));
     if (enc === 1) {
+      // UTF-16 с BOM: прячем его, иначе попадёт в текст (\uFEFF)
       if (rest[0] === 0xff && rest[1] === 0xfe) return trimNull(new TextDecoder('utf-16le').decode(rest.subarray(2)));
-      return trimNull(new TextDecoder('utf-16').decode(rest)); // BOM BE
+      if (rest[0] === 0xfe && rest[1] === 0xff) return trimNull(new TextDecoder('utf-16be').decode(rest.subarray(2)));
+      return trimNull(new TextDecoder('utf-16le').decode(rest));
     }
     if (enc === 2) return trimNull(new TextDecoder('utf-16be').decode(rest));
     if (enc === 3) return trimNull(new TextDecoder('utf-8').decode(rest));
@@ -98,14 +100,15 @@ function parsePicture(data, isV22) {
     let mime = 'image/jpeg';
     if (isV22) {
       mime = ascii(data.subarray(1, 4)).toLowerCase();
-      if (mime === 'jpg') mime = 'image/jpeg';
       p = 4;
     } else {
       let end = p;
       while (end < data.length && data[end] !== 0) end++;
-      mime = ascii(data.subarray(p, end)).toLowerCase() || 'image/jpeg';
+      mime = ascii(data.subarray(p, end)).toLowerCase();
       p = end + 1;
     }
+    if (mime === 'jpg' || mime === 'jpeg') mime = 'image/jpeg';
+    else if (mime === 'png') mime = 'image/png';
     p += 1; // тип картинки
     // описание (заканчивается 0x00; для UTF-16 — 0x0000)
     if (enc === 1 || enc === 2) {
@@ -122,6 +125,11 @@ function parsePicture(data, isV22) {
   } catch {
     return null;
   }
+}
+
+/** decodeURIComponent, не падающий на именах со «случайным» % (например «100% хит.mp3»). */
+function safeDecode(s) {
+  try { return decodeURIComponent(s); } catch { return s; }
 }
 
 /** Парсинг текста M3U/PLS: возвращает [{ name, artist, title }] */
@@ -143,7 +151,7 @@ export function parseM3U(text) {
       continue;
     } else {
       const base = line.split(/[\\/]/).pop() || line;
-      const clean = decodeURIComponent(base.replace(/\+/g, '%2B')).replace(/%20/g, ' ');
+      const clean = safeDecode(base.replace(/\+/g, '%2B')).replace(/%20/g, ' ');
       out.push({ name: clean, artist: pending?.artist || '', title: pending?.title || '' });
       pending = null;
     }

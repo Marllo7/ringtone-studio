@@ -211,7 +211,7 @@ function showNoMusicFound(seenFiles, fromFolder) {
           ? 'Папка пустая или выбор не подтверждён. В окне телефона найдите папку с песнями и нажмите кнопку <b>«ВЫБРАТЬ»</b> внизу экрана.'
           : 'Файлы не выбраны. В окне телефона отмечайте песни галочками и нажмите кнопку <b>«ОТКРЫТЬ»</b>.')}</span>
     </div>
-    <div class="help-note">Тап по файлу в окне телефона не подходит — там приложение может только «открыть с помощью». Нужно подтвердить выбор кнопкой внизу окна.</div>
+    <div class="help-note">Если телефон предложил <b>«открыть плеером»</b> — вы нажали на саму песню. Вернитесь назад: плеер не нужен, музыка играет внутри приложения. Нужно подтвердить выбор кнопкой внизу окна.</div>
     <button class="btn primary block" data-act="ok">Понятно</button>
   </div>`);
   el.querySelector('[data-act=ok]').addEventListener('click', () => el.__m.close());
@@ -224,9 +224,9 @@ function showPickerHint(onReady) {
     <div class="sheet-title"><span class="grow">Сейчас откроется окно телефона</span></div>
     <div class="help-steps">
       <div class="help-step"><span class="hs-n">1</span><span>Найдите папку с музыкой — можно на SD-карте. Открыть можно только папку.</span></div>
-      <div class="help-step"><span class="hs-n">2</span><span>Нажмите кнопку <b>«ВЫБРАТЬ»</b> внизу окна (иногда «ОК») — вся музыка из папки добавится в приложение.</span></div>
+      <div class="help-step"><span class="hs-n">2</span><span>Нажмите кнопку <b>«ВЫБРАТЬ»</b> внизу окна — вся музыка из папки добавится в приложение.</span></div>
     </div>
-    <div class="help-note">Выбираете файлы по одному? Отмечайте их галочками и нажмите «ОТКРЫТЬ» внизу окна.</div>
+    <div class="help-note">Не нажимайте на сами песни: телефон предложит открыть их плеером — это не нужно, музыка играет внутри приложения. Выбираете файлы по одному? Отмечайте их галочками и нажмите «ОТКРЫТЬ».</div>
     <button class="btn primary block" data-act="ok">Понятно, открыть</button>
   </div>`);
   el.querySelector('[data-act=ok]').addEventListener('click', () => {
@@ -449,7 +449,10 @@ function emptyState(icoName, title, text) {
 }
 
 /** Список с догрузкой при прокрутке (пачками по 120) */
+let listIO = null; // IntersectionObserver прошлого рендера — чистим, чтобы не копился
+
 function renderBatchedList(container, items, contextFids) {
+  if (listIO) { listIO.disconnect(); listIO = null; }
   const list = h(`<div class="track-list"></div>`);
   const moreBtn = h(`<button class="btn ghost block append-more" type="button">Показать ещё</button>`);
   container.appendChild(list);
@@ -476,15 +479,15 @@ function renderBatchedList(container, items, contextFids) {
   // автозагрузка при приближении к концу
   const sentinel = h(`<div class="append-sentinel"></div>`);
   container.appendChild(sentinel);
-  const io = new IntersectionObserver((ents) => {
+  listIO = new IntersectionObserver((ents) => {
     if (ents[0].isIntersecting && rendered < items.length) renderNext();
-    if (rendered >= items.length) io.disconnect();
+    if (rendered >= items.length) listIO.disconnect();
   }, { root: document.getElementById('main'), rootMargin: '300px' });
-  io.observe(sentinel);
+  listIO.observe(sentinel);
 }
 
 function buildTrackRow(track, index, contextGetter) {
-  const row = h(`<div class="track-row" data-fid="${escapeHtml(track.fid)}">
+  const row = h(`<div class="track-row ${playingFid === track.fid ? 'playing' : ''}" data-fid="${escapeHtml(track.fid)}">
       <div class="t-art" aria-hidden="true">${icon('music')}</div>
       <div class="t-main"><div class="t-title"></div><div class="t-sub"></div></div>
       <div class="t-dur">—</div>

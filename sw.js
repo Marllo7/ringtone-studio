@@ -1,6 +1,6 @@
 // sw.js — service worker: офлайн-режим и кеш приложения
 
-const VERSION = 'rs-v1.2.1';
+const VERSION = 'rs-v1.3.0';
 const CACHE = `ringtone-studio-${VERSION}`;
 
 const ASSETS = [

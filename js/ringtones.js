@@ -18,6 +18,10 @@ export function initRingtones({ goToEditor }) {
   view = document.getElementById('view-ringtones');
   audio = new Audio();
   audio.addEventListener('ended', () => stopPlayback());
+  // если заиграл другой источник (плеер/редактор) — останавливаем рингтон
+  document.addEventListener('rs:audio-focus', (e) => {
+    if (e.detail !== 'ringtones' && playingId) stopPlayback();
+  });
   render();
 }
 
@@ -133,7 +137,10 @@ function buildRow(rec) {
 
 function togglePlay(rec) {
   if (playingId === rec.id) {
-    if (audio.paused) audio.play().catch(() => {}); else stopPlayback();
+    if (audio.paused) {
+      document.dispatchEvent(new CustomEvent('rs:audio-focus', { detail: 'ringtones' }));
+      audio.play().catch(() => {});
+    } else stopPlayback();
     refresh();
     return;
   }
@@ -141,6 +148,7 @@ function togglePlay(rec) {
   playingUrl = URL.createObjectURL(rec.mp3);
   audio.src = playingUrl;
   playingId = rec.id;
+  document.dispatchEvent(new CustomEvent('rs:audio-focus', { detail: 'ringtones' }));
   audio.play().catch(() => {});
   vibrate(6);
   refresh();

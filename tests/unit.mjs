@@ -93,10 +93,27 @@ ok(pk5.mins.every(v => v === 0), 'from == to → нули');
 
 console.log('== engine: renderClip (обрезка) ==');
 // стаб AudioContext для Node
+const acSources = [];
 class FakeAC {
+  constructor() {
+    this.destination = { output: true };
+    this.currentTime = 0;
+    this.state = 'running';
+  }
+  resume() { return Promise.resolve(); }
   createBuffer(chs, n, sr) {
     const chans = Array.from({ length: chs }, () => new Float32Array(n));
     return { sampleRate: sr, length: n, numberOfChannels: chs, duration: n / sr, getChannelData: (c) => chans[c] };
+  }
+  createBufferSource() {
+    const s = {
+      buffer: null, loop: false, loopStart: 0, loopEnd: 0, onended: null,
+      connectedTo: null,
+      connect(d) { this.connectedTo = d; },
+      start() {}, stop() {},
+    };
+    acSources.push(s);
+    return s;
   }
 }
 globalThis.window = { AudioContext: FakeAC };
@@ -126,6 +143,20 @@ const stClip = engine.renderClip(
   { sampleRate: SR, length: SR, duration: 1, numberOfChannels: 2, getChannelData: (c) => (c === 0 ? chL : chR) },
   0, 0.5, 0, 0, 0);
 ok(stClip.numberOfChannels === 2 && stClip.length === Math.round(SR * 0.5), 'стерео-отрезок');
+
+console.log('== engine: playRange (предпросмотр) ==');
+const prBuf = constBuf(2, 0.3);
+const prHandle = engine.playRange(prBuf, 0.5, 1.2, {});
+ok(!!prHandle && typeof prHandle.stop === 'function' && typeof prHandle.position === 'function', 'playRange возвращает управление');
+ok(typeof prHandle.position() === 'number' && isFinite(prHandle.position()), 'position() возвращает число');
+prHandle.stop();
+ok(prHandle.stopped === true, 'stop() останавливает');
+const before = acSources.length;
+engine.playRange(prBuf, 0, 0.5, { loop: true });
+engine.playRange(prBuf, 0, 0.5, {});
+ok(acSources.length === before + 2, 'на каждый запуск — один источник');
+ok(acSources[acSources.length - 2].connectedTo === engine.getCtx().destination, 'источник подключён к выходу (иначе звука нет)');
+ok(acSources[acSources.length - 1].connectedTo === engine.getCtx().destination, 'источник подключён к выходу (без цикла)');
 
 console.log('== editor pipeline: обрезка → MP3 (полный цикл) ==');
 globalThis.self = globalThis;
@@ -190,6 +221,39 @@ const tCover = await readTags(new File([new Uint8Array(id3Cover), new Uint8Array
 ok(tCover.cover instanceof Blob && tCover.cover.size === 500, `APIC blob = ${tCover.cover?.size} байт`);
 ok(tCover.cover?.type === 'image/jpeg', 'APIC mime');
 
+console.log('== id3: UTF-16 BOM и v2.2 PNG-обложка ==');
+function encodeUtf16le(s) {
+  const out = [];
+  for (const ch of s) {
+    const c = ch.codePointAt(0);
+    if (c > 0xffff) { // суррогатная пара
+      const v = c - 0x10000;
+      out.push((0xd800 + (v >> 10)) & 0xff, ((0xd800 + (v >> 10)) >> 8) & 0xff,
+        (0xdc00 + (v & 0x3ff)) & 0xff, ((0xdc00 + (v & 0x3ff)) >> 8) & 0xff);
+    } else out.push(c & 0xff, (c >> 8) & 0xff);
+  }
+  return out;
+}
+function frame16(id, text) { // v2.3, enc=1 UTF-16 + BOM
+  const enc = new TextEncoder();
+  const body = [1, 0xff, 0xfe, ...encodeUtf16le(text)];
+  return [...enc.encode(id), ...u32be(body.length), 0, 0, ...body];
+}
+const frames16 = [...frame16('TIT2', 'Песня UTF16')];
+const id3u16 = [0x49, 0x44, 0x33, 3, 0, 0, ...synchsafe(frames16.length), ...frames16];
+const tu16 = await readTags(new File([new Uint8Array(id3u16)], 'u16.mp3'), {});
+ok(tu16.title === 'Песня UTF16', `UTF-16 BOM декодируется без \uFEFF (${JSON.stringify(tu16.title)})`);
+function pic22(fmt, payload) { // v2.2 PIC: 3-байт формат
+  const body = [0, ...new TextEncoder().encode(fmt), 3, 0, ...payload];
+  return [...new TextEncoder().encode('PIC'), (body.length >> 16) & 255, (body.length >> 8) & 255, body.length & 255, ...body];
+}
+const picBytes = Array.from({ length: 400 }, (_, i) => i % 256);
+const picFrames22 = pic22('PNG', picBytes);
+const id3v22pic = [0x49, 0x44, 0x33, 2, 0, 0, ...synchsafe(picFrames22.length), ...picFrames22];
+const t22pic = await readTags(new File([new Uint8Array(id3v22pic)], 'p22.mp3'), { withCover: true });
+ok(t22pic.cover?.type === 'image/png', `v2.2 PNG-обложка → image/png (${t22pic.cover?.type})`);
+ok(t22pic.cover?.size === 400, `v2.2 обложка = ${t22pic.cover?.size} байт`);
+
 console.log('== id3: не-mp3 файлы ==');
 ok(Object.keys(await readTags(new File([new Uint8Array(100)], 'plain.mp3'), {})).length === 0, 'нет ID3 → пусто');
 ok(Object.keys(await readTags(new File([new Uint8Array(5)], 'tiny.mp3'), {})).length === 0, 'файл < 10 байт → пусто');
@@ -211,6 +275,8 @@ ok(m3uWin[0].name === 'My File.mp3', 'windows-путь');
 const m3uEnc = parseM3U('http://x/y/My%20Song.mp3');
 ok(m3uEnc[0].name === 'My Song.mp3', '%20 декодируется');
 ok(parseM3U('#EXTM3U\n#комментарий').length === 0, 'только комментарии → пусто');
+const m3uBadPct = parseM3U('#EXTINF:1,X\n100% Любовь.mp3');
+ok(m3uBadPct[0].name === '100% Любовь.mp3', 'символ % в имени не ломает парсинг');
 
 console.log('== export: sanitizeFilename ==');
 const { sanitizeFilename } = await import('../js/export.js');
